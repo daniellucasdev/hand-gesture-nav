@@ -37,6 +37,9 @@ projeto de outro jeito ou reabrir decisões já fechadas.
   mínimo 0.15). As ações reais (osascript e open -a) também já foram
   provadas fora do dry-run; permissões de Câmera e Acessibilidade do
   Terminal concedidas. Falta só o uso corriqueiro sem --dry-run.
+  - Sessão de calibração 3 (23/10): os 5 gestos dispararam com a mão real em
+  dry-run — OK iniciou E encerrou a gravação (toggle alternou), joinha deu
+  Enter 2x com re-arme, swipes e mão aberta seguiram ok.
 - open -a Claude funciona (Claude Desktop instalado em /Applications/Claude.app).
 - O que o dry-run não cobre: a troca REAL de Space e a abertura real do
   Claude durante o uso — as ações já foram provadas isoladamente, falta
