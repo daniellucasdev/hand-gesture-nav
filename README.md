@@ -8,6 +8,8 @@ local, sem nuvem, sem dados saindo da máquina.
 | Swipe com **dois dedos** (indicador + médio) da **direita para a esquerda** | Space para a **direita** (ctrl+→) |
 | Swipe com **dois dedos** da **esquerda para a direita** | Space para a **esquerda** (ctrl+←) |
 | **Mão aberta** por **2 segundos** | Abre o **Claude Desktop** |
+| Símbolo de **OK** (círculo polegar+indicador, 3 dedos de pé) | **Inicia** a gravação de áudio no Claude; fazer de novo **encerra** |
+| **Joinha** (punho com polegar pra cima) | **Enter** |
 
 ```
  ┌────────────────────────────────────────────┐
@@ -79,9 +81,18 @@ python src/main.py --dry-run            # loga as ações, não executa
 python src/main.py --hold-seconds 1.5   # mão aberta mais rápida
 python src/main.py --cooldown 0.8       # swipes mais rápidos em sequência
 python src/main.py --app-name Safari    # outro app na mão aberta
+python src/main.py --voice-keys f5      # atalho de gravação do gesto OK
 python src/main.py --frames 120         # sai sozinho após N frames
 python src/main.py --camera arquivo.mp4 # processa um vídeo (teste sem webcam)
 ```
+
+Sobre o gesto de **OK** (gravação de áudio): o app traz o Claude para frente
+e envia o atalho configurado em `--voice-keys` (formato `f5`,
+`ctrl+shift+d`, `enter`, key code numérico ou 1 caractere). O estado é
+alternado a cada gesto (inicia → encerra → inicia...) e o HUD mostra
+`REC: ON` enquanto estiver gravando. Sem `--voice-keys`, o gesto apenas
+ativa o app — descubra o atalho de voz/ditado do seu Claude
+(Ajustes do app ou documentação) e passe aqui.
 
 ## Testes
 

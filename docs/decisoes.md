@@ -85,3 +85,18 @@ Blindagens da decisão 4 foram fortalecidas, não removidas.
 Eu havia entendido cmd+seta; o correto para trocar de Space é **ctrl+seta**
 (`key code N using control down` no osascript). Mudado em src/actions.py e em
 toda a documentação. O mapeamento direção->seta (decisão 4) não mudou.
+
+## 10. Novos gestos: OK (toggle de gravação) e joinha (Enter) (23/10/2026)
+
+- **OK** = círculo polegar+indicador (ponta a ponta, < 30% da escala da mão)
+  com médio/anelar/mínimo estendidos -> evento "toggle_recording". Checado
+  ANTES da mão aberta na classificação (não conflita: na mão aberta o polegar
+  fica longe do indicador).
+- **Joinha** = polegar estendido + 4 dedos dobrados + ponta acima do IP acima
+  do MCP (aponta para cima) -> "press_enter" (key code 36).
+- Ambos disparam uma vez por EPISÓDIO da pose (re-armam só quando a mão sai
+  da pose), com cooldown de 1,5 s — segurar a mão não repete o disparo.
+- Gravação de áudio: o Claude Desktop não tem atalho público de voz, então o
+  atalho é configurável via --voice-keys; sem ele, o gesto ativa o app e
+  avisa. Estado do toggle (iniciar/encerrar) é mantido no app.
+

@@ -13,6 +13,10 @@ Gestos:
     - mão vai da esquerda para a direita -> evento "workspace_left"
       (ctrl+seta esquerda)
 - MÃO ABERTA (5 dedos estendidos) segurada por hold_seconds -> "open_app".
+- SÍMBOLO DE OK (círculo polegar+indicador; médio, anelar e mínimo
+  estendidos) -> "toggle_recording" (uma vez por episódio da pose).
+- JOINHA (só o polegar, apontando para cima) -> "press_enter"
+  (uma vez por episódio da pose).
 
 Blindagens (lição de CV: ação não é detecção):
 - votação majoritária da pose nas últimas frames (classificação não oscila);
@@ -47,6 +51,8 @@ PINKY_TIP, PINKY_PIP, PINKY_MCP = 20, 18, 17
 POSE_NONE = ""
 POSE_TWO_FINGERS = "dois dedos"
 POSE_OPEN_HAND = "mão aberta"
+POSE_OK = "ok"
+POSE_THUMBS_UP = "joinha"
 
 # Centro da palma: pulso + 4 bases dos dedos (estável, pouco afetado por dedo)
 PALM_POINTS = (WRIST, INDEX_MCP, MIDDLE_MCP, 13, PINKY_MCP)
@@ -59,6 +65,7 @@ def _dist(a, b) -> float:
 def classify_pose(lm) -> str:
     """Classifica a pose a partir dos 21 landmarks normalizados."""
     wrist = lm[WRIST]
+    scale = _dist(lm[WRIST], lm[MIDDLE_MCP]) or 1e-6  # escala da mão
 
     def extended(tip: int, pip: int) -> bool:
         # dedo estendido: ponta mais longe do pulso que a articulação do meio
@@ -73,12 +80,24 @@ def classify_pose(lm) -> str:
         _dist(lm[THUMB_TIP], lm[PINKY_MCP])
         > _dist(lm[THUMB_IP], lm[PINKY_MCP]) * 1.05
     )
+    # OK: polegar e indicador formam círculo; os outros 3 estendidos
+    if (
+        _dist(lm[THUMB_TIP], lm[INDEX_TIP]) < 0.30 * scale
+        and middle and ring and pinky
+    ):
+        return POSE_OK
     if index and middle and ring and pinky and thumb:
         return POSE_OPEN_HAND
     # dois dedos: polegar livre (em V natural ele fica semi-aberto);
     # anelar + mínimo dobrados é o que separa da mão aberta
     if index and middle and not ring and not pinky:
         return POSE_TWO_FINGERS
+    # joinha: só o polegar, apontando para cima (y cresce para baixo)
+    if (
+        thumb and not index and not middle and not ring and not pinky
+        and lm[THUMB_TIP][1] < lm[THUMB_IP][1] < lm[2][1]
+    ):
+        return POSE_THUMBS_UP
     return POSE_NONE
 
 
@@ -90,6 +109,8 @@ class GestureDetector:
     swipe_cooldown: float = 1.2      # intervalo mínimo entre swipes (s)
     swipe_grace: float = 0.18        # tolerância de pose perdida no trajeto (s)
     open_cooldown: float = 4.0       # intervalo mínimo entre "abrir app" (s)
+    ok_cooldown: float = 1.5         # intervalo mínimo entre OKs (s)
+    thumbs_cooldown: float = 1.5     # intervalo mínimo entre joinhas (s)
     jump_reset: float = 0.35         # salto da palma que zera o estado
     ema_alpha: float = 0.6           # peso do frame novo na suavização
     pose_vote_frames: int = 3        # votação majoritária da pose
@@ -104,6 +125,10 @@ class GestureDetector:
     _hold_start: float | None = None
     _hold_fired: bool = False
     _open_ok_at: float = 0.0
+    _ok_fired: bool = False
+    _ok_ok_at: float = 0.0
+    _thumb_fired: bool = False
+    _thumb_ok_at: float = 0.0
     _last_palm: tuple | None = None
 
     def update(self, landmarks, now: float) -> list[str]:
@@ -136,6 +161,7 @@ class GestureDetector:
 
         events = self._update_swipe(palm, now)
         events += self._update_hold(now)
+        events += self._update_instant(now)
         return events
 
     def debug_state(self) -> dict:
@@ -192,6 +218,25 @@ class GestureDetector:
             return ["open_app"]
         return []
 
+    # -- poses instantâneas (OK -> toggle, joinha -> enter) -----------------
+    def _update_instant(self, now: float) -> list[str]:
+        events = []
+        if self.pose == POSE_OK:
+            if not self._ok_fired and now >= self._ok_ok_at:
+                self._ok_fired = True
+                self._ok_ok_at = now + self.ok_cooldown
+                events.append("toggle_recording")
+        else:
+            self._ok_fired = False  # re-arma só quando sai da pose
+        if self.pose == POSE_THUMBS_UP:
+            if not self._thumb_fired and now >= self._thumb_ok_at:
+                self._thumb_fired = True
+                self._thumb_ok_at = now + self.thumbs_cooldown
+                events.append("press_enter")
+        else:
+            self._thumb_fired = False
+        return events
+
     # -- auxiliares --------------------------------------------------------
     def _push_vote(self, raw: str) -> None:
         self._pose_votes.append(raw)
@@ -234,4 +279,6 @@ class GestureDetector:
         self._trail.clear()
         self._hold_start = None
         self._hold_fired = False
+        self._ok_fired = False
+        self._thumb_fired = False
         self.hold_progress = 0.0

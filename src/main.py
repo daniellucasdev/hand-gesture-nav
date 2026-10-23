@@ -27,7 +27,7 @@ import mediapipe as mp  # noqa: E402
 from mediapipe.tasks import python as mp_python  # noqa: E402
 from mediapipe.tasks.python import vision as mp_vision  # noqa: E402
 
-from actions import open_app, switch_space  # noqa: E402
+from actions import open_app, press_enter, switch_space, toggle_recording  # noqa: E402
 from gestures import GestureDetector  # noqa: E402
 import overlay  # noqa: E402
 
@@ -52,6 +52,9 @@ def parse_args(argv=None):
     p.add_argument("--height", type=int, default=720)
     p.add_argument("--model", default="models/hand_landmarker.task", help="caminho do .task")
     p.add_argument("--app-name", default="Claude", help="app aberto pela mão aberta (default Claude)")
+    p.add_argument("--voice-keys", default="",
+                   help="atalho de gravação de áudio do app (ex.: f5, ctrl+shift+d);"
+                        " o gesto de OK alterna iniciar/encerrar")
     p.add_argument("--hold-seconds", type=float, default=2.0, help="segundos de mão aberta (default 2.0)")
     p.add_argument("--cooldown", type=float, default=1.2, help="cooldown de swipe em segundos (default 1.2)")
     p.add_argument("--confidence", type=float, default=0.6, help="confiança mínima de detecção")
@@ -113,7 +116,16 @@ def main(argv=None) -> int:
         "workspace_left": lambda: switch_space("left", args.dry_run),
         "workspace_right": lambda: switch_space("right", args.dry_run),
         "open_app": lambda: open_app(args.app_name, args.dry_run),
+        "press_enter": lambda: press_enter(args.dry_run),
     }
+    recording = False  # estado do toggle de gravação (gesto de OK)
+
+    def do_toggle_recording() -> bool:
+        nonlocal recording
+        recording = not recording
+        return toggle_recording(args.app_name, recording, args.voice_keys, args.dry_run)
+
+    dispatch["toggle_recording"] = do_toggle_recording
 
     try:
         while True:
@@ -157,7 +169,8 @@ def main(argv=None) -> int:
                 if det.smoothed is not None:
                     overlay.draw_landmarks(frame, det.smoothed)
                 overlay.draw_hud(frame, det, args.app_name, fps,
-                                 last_event, last_event_at, args.dry_run)
+                                 last_event, last_event_at, args.dry_run,
+                                 recording)
                 cv2.imshow(WINDOW_NAME, frame)
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):

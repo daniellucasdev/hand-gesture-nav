@@ -10,7 +10,7 @@ import time
 
 import cv2
 
-from gestures import POSE_OPEN_HAND, POSE_TWO_FINGERS
+from gestures import POSE_OK, POSE_OPEN_HAND, POSE_THUMBS_UP, POSE_TWO_FINGERS
 
 HAND_CONNECTIONS = [
     (0, 1), (1, 2), (2, 3), (3, 4),
@@ -31,9 +31,16 @@ EVENT_LABELS = {
     "workspace_left": "<- Space esquerda",
     "workspace_right": "Space direita ->",
     "open_app": "Abrir app",
+    "toggle_recording": "Gravar audio (toggle)",
+    "press_enter": "Enter",
 }
 
-POSE_LABELS = {POSE_TWO_FINGERS: "DOIS DEDOS", POSE_OPEN_HAND: "MAO ABERTA"}
+POSE_LABELS = {
+    POSE_TWO_FINGERS: "DOIS DEDOS",
+    POSE_OPEN_HAND: "MAO ABERTA",
+    POSE_OK: "OK",
+    POSE_THUMBS_UP: "JOINHA",
+}
 
 
 def _px(p, w, h):
@@ -49,8 +56,12 @@ def draw_landmarks(frame, lm) -> None:
 
 
 def draw_hud(frame, detector, app_name: str, fps: float,
-             last_event: str, last_event_at: float, dry_run: bool) -> None:
+             last_event: str, last_event_at: float, dry_run: bool,
+             recording: bool = False) -> None:
     lines = [f"Mao: {POSE_LABELS.get(detector.pose, '-')}  |  FPS: {fps:.0f}"]
+
+    if recording:
+        lines.append("REC: ON")
 
     if detector.pose == POSE_OPEN_HAND:
         secs = detector.hold_progress * detector.hold_seconds

@@ -30,6 +30,8 @@ def make_hand(palm_x=0.5, pose="open"):
 
     pose: 'open' (5 dedos estendidos), 'two' (indicador+médio),
     'two_thumb' (indicador+médio com POLEGAR aberto — o V natural),
+    'ok' (círculo polegar+indicador, 3 dedos estendidos),
+    'thumb_up' (joinha: punho com polegar para cima),
     'fist' (todos dobrados), 'three' (indicador+médio+anelar).
     """
     wrist = (palm_x, 0.70)
@@ -49,28 +51,49 @@ def make_hand(palm_x=0.5, pose="open"):
         lm[base_idx + 2] = dip
         lm[base_idx + 3] = tip
 
-    ext = {
-        "index": pose in ("open", "two", "three", "two_thumb"),
-        "middle": pose in ("open", "two", "three", "two_thumb"),
-        "ring": pose in ("open", "three"),
-        "pinky": pose == "open",
-    }
-    finger(5, FINGER_DIRECTIONS["index"], ext["index"])
-    finger(9, FINGER_DIRECTIONS["middle"], ext["middle"])
-    finger(13, FINGER_DIRECTIONS["ring"], ext["ring"])
-    finger(17, FINGER_DIRECTIONS["pinky"], ext["pinky"])
-
-    # polegar: estendido se afastando da palma; dobrado cruzando sobre ela
-    if pose in ("open", "two_thumb"):
+    if pose == "ok":
+        # círculo: ponta do polegar encosta na ponta do indicador
         lm[1] = (wrist[0] - 0.05, wrist[1] - 0.04)
-        lm[2] = (wrist[0] - 0.10, wrist[1] - 0.08)
-        lm[3] = (wrist[0] - 0.15, wrist[1] - 0.11)
-        lm[4] = (wrist[0] - 0.20, wrist[1] - 0.13)
+        lm[2] = (wrist[0] - 0.10, wrist[1] - 0.14)
+        lm[3] = (wrist[0] - 0.13, wrist[1] - 0.24)
+        lm[4] = (wrist[0] - 0.09, wrist[1] - 0.31)
+        finger(5, FINGER_DIRECTIONS["index"] + 0.02, True)   # indicador curva pro polegar
+        finger(9, FINGER_DIRECTIONS["middle"], True)
+        finger(13, FINGER_DIRECTIONS["ring"], True)
+        finger(17, FINGER_DIRECTIONS["pinky"], True)
+    elif pose == "thumb_up":
+        # punho fechado com o polegar esticado para cima
+        finger(5, FINGER_DIRECTIONS["index"], False)
+        finger(9, FINGER_DIRECTIONS["middle"], False)
+        finger(13, FINGER_DIRECTIONS["ring"], False)
+        finger(17, FINGER_DIRECTIONS["pinky"], False)
+        lm[1] = (wrist[0] - 0.07, wrist[1] - 0.15)
+        lm[2] = (wrist[0] - 0.09, wrist[1] - 0.25)
+        lm[3] = (wrist[0] - 0.11, wrist[1] - 0.30)
+        lm[4] = (wrist[0] - 0.13, wrist[1] - 0.38)
     else:
-        lm[1] = (wrist[0] - 0.05, wrist[1] - 0.04)
-        lm[2] = (wrist[0] - 0.07, wrist[1] - 0.06)
-        lm[3] = (wrist[0] - 0.04, wrist[1] - 0.03)
-        lm[4] = (wrist[0] + 0.01, wrist[1] - 0.02)
+        ext = {
+            "index": pose in ("open", "two", "three", "two_thumb"),
+            "middle": pose in ("open", "two", "three", "two_thumb"),
+            "ring": pose in ("open", "three"),
+            "pinky": pose == "open",
+        }
+        finger(5, FINGER_DIRECTIONS["index"], ext["index"])
+        finger(9, FINGER_DIRECTIONS["middle"], ext["middle"])
+        finger(13, FINGER_DIRECTIONS["ring"], ext["ring"])
+        finger(17, FINGER_DIRECTIONS["pinky"], ext["pinky"])
+
+        # polegar: estendido se afastando da palma; dobrado cruzando sobre ela
+        if pose in ("open", "two_thumb"):
+            lm[1] = (wrist[0] - 0.05, wrist[1] - 0.04)
+            lm[2] = (wrist[0] - 0.10, wrist[1] - 0.08)
+            lm[3] = (wrist[0] - 0.15, wrist[1] - 0.11)
+            lm[4] = (wrist[0] - 0.20, wrist[1] - 0.13)
+        else:
+            lm[1] = (wrist[0] - 0.05, wrist[1] - 0.04)
+            lm[2] = (wrist[0] - 0.07, wrist[1] - 0.06)
+            lm[3] = (wrist[0] - 0.04, wrist[1] - 0.03)
+            lm[4] = (wrist[0] + 0.01, wrist[1] - 0.02)
     return [(p[0], p[1], 0.0) for p in lm]
 
 
@@ -90,6 +113,15 @@ def test_poses_classificadas():
     assert classify_pose(make_hand(pose="two_thumb")) == POSE_TWO_FINGERS
     assert classify_pose(make_hand(pose="fist")) == POSE_NONE
     assert classify_pose(make_hand(pose="three")) == POSE_NONE
+
+
+def test_poses_ok_e_joinha():
+    from gestures import POSE_OK, POSE_THUMBS_UP
+    assert classify_pose(make_hand(pose="ok")) == POSE_OK
+    assert classify_pose(make_hand(pose="thumb_up")) == POSE_THUMBS_UP
+    # mão aberta NÃO é OK (polegar longe do indicador) e punho NÃO é joinha
+    assert classify_pose(make_hand(pose="open")) != POSE_OK
+    assert classify_pose(make_hand(pose="fist")) != POSE_THUMBS_UP
 
 
 # --------------------------------------------------------------- swipe -----
@@ -210,6 +242,32 @@ def test_mao_aberta_2s_dispara_uma_vez():
     frames = [make_hand(pose="open")] * 75  # 2.5s a 30fps
     events = run(det, frames)
     assert events == ["open_app"]
+
+
+# ------------------------------------------------------- OK e joinha -----
+
+def test_ok_dispara_toggle_uma_vez_por_episodio():
+    det = GestureDetector()
+    t0 = 100.0
+    events = run(det, [make_hand(pose="ok")] * 60, t0)   # 2s segurando OK
+    assert events == ["toggle_recording"]                 # dispara 1x
+    t1 = t0 + 60 * DT
+    events += run(det, [make_hand(pose="fist")] * 30, t1)  # sai da pose (re-arma)
+    t2 = t1 + 30 * DT
+    events += run(det, [make_hand(pose="ok")] * 60, t2)    # faz de novo
+    assert events == ["toggle_recording", "toggle_recording"]
+
+
+def test_joinha_dispara_enter_uma_vez_por_episodio():
+    det = GestureDetector()
+    t0 = 100.0
+    events = run(det, [make_hand(pose="thumb_up")] * 45, t0)
+    assert events == ["press_enter"]
+    t1 = t0 + 45 * DT
+    events += run(det, [make_hand(pose="open")] * 30, t1)   # muda de pose
+    t2 = t1 + 30 * DT
+    events += run(det, [make_hand(pose="thumb_up")] * 45, t2)
+    assert events == ["press_enter", "press_enter"]
 
 
 def test_mao_aberta_1s_nao_dispara():

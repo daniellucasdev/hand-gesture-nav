@@ -10,6 +10,9 @@ neste repositório. O app abre a webcam, lê gestos da minha mão e executa:
 2. Swipe com dois dedos da esquerda para a direita > troca o Space para a
    ESQUERDA (ctrl + seta esquerda).
 3. Mão aberta por 2 segundos > abre o Claude Desktop.
+4. Símbolo de OK (círculo polegar+indicador, 3 dedos de pé) > inicia a
+   gravação de áudio no Claude; fazer o OK de novo encerra.
+5. Joinha (punho com polegar pra cima) > Enter.
 
 (ATENÇÃO: modificador é CTRL, não cmd — corrigido por mim em 23/10/2026 após
 a primeira calibração; não voltar para cmd.)
@@ -51,6 +54,10 @@ projeto de outro jeito ou reabrir decisões já fechadas.
 - Detecção roda em CPU por decisão (delegate GPU/Metal do MediaPipe 0.10.x
   quebrado no macOS; CPU dá ~22 ms/frame no M2). Flag --delegate GPU existe
   para experimentar.
+- Gravação de áudio (gesto de OK): atalho configurável em --voice-keys
+  (Claude Desktop não tem atalho público de voz); sem atalho, o gesto só
+  ativa o app. Estado iniciar/encerrar mantido pelo app (docs/decisoes.md
+  item 10).
 - Documentação viva em docs/decisoes.md (decisões datadas) e README.md (uso,
   permissões, flags).
 
