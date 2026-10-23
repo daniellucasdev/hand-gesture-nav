@@ -59,6 +59,8 @@ def parse_args(argv=None):
                    help="delegata do MediaPipe (GPU/Metal falha nesta versão; CPU roda a ~45fps)")
     p.add_argument("--no-mirror", action="store_true", help="não espelhar a imagem")
     p.add_argument("--no-window", action="store_true", help="sem janela de preview")
+    p.add_argument("--debug", action="store_true",
+                   help="telemetria de calibração (pose/trajeto) a cada 0,5s")
     p.add_argument("--dry-run", action="store_true", help="loga ações sem executar")
     p.add_argument("--frames", type=int, default=0, help="sair após N frames (0 = roda até Q)")
     return p.parse_args(argv)
@@ -105,6 +107,7 @@ def main(argv=None) -> int:
 
     fps, last_t = 0.0, time.monotonic()
     last_event, last_event_at = "", 0.0
+    last_debug = 0.0
     frame_i, read_fails, last_ms = 0, 0, 0
     dispatch = {
         "workspace_left": lambda: switch_space("left", args.dry_run),
@@ -145,6 +148,10 @@ def main(argv=None) -> int:
             for event in det.update(landmarks, now):
                 last_event, last_event_at = event, now
                 dispatch[event]()
+
+            if args.debug and now - last_debug > 0.5:
+                last_debug = now
+                print(f"[debug] {det.debug_state()}", flush=True)
 
             if not args.no_window:
                 if det.smoothed is not None:

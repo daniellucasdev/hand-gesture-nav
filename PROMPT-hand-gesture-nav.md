@@ -53,12 +53,15 @@ projeto de outro jeito ou reabrir decisões já fechadas.
    hora de trocar de Space. Detalhes em docs/decisoes.md, item 1.
 2. Mapeamento do swipe é literal ao pedido acima (direita->esquerda vira
    Space DIREITA) — é invertido da intuição de arrastar conteúdo de propósito.
-3. Pose de "dois dedos" exige polegar, anelar e mínimo dobrados — torna os
-   dois gestos mutuamente exclusivos (mão aberta rápida não dispara swipe).
-4. Blindagens obrigatórias (não remover): EMA anti-tremido, swipe horizontal
-   (|dx| >= 2.5*|dy|) com trajeto mínimo e cooldown, hold que re-arma só
-   depois de a mão fechar/some, reset total quando o centro da palma salta
-   (tracking quebrou). Detecção não é ação.
+3. Pose de "dois dedos": indicador+médio estendidos, anelar+mínimo dobrados,
+   POLEGAR LIVRE (calibração de 23/10 provou que exigir polegar dobrado mata
+   o V natural). A exclusão com a mão aberta continua garantida por
+   anelar+mínimo dobrados.
+4. Blindagens obrigatórias (não remover): votação majoritária da pose,
+   EMA anti-tremido, swipe horizontal (|dx| >= 2.5*|dy|) com trajeto mínimo e
+   cooldown, grace de trajeto quando a mão some breve (0,18s), hold que
+   re-arma só depois de a mão fechar/some, reset total quando o centro da
+   palma salta (tracking quebrou). Detecção não é ação.
 5. Injeção de teclas via osascript (subprocess), sem pynput/CGEvent.
 
 ## Quando retomar, faça nesta ordem

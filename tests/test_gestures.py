@@ -29,6 +29,7 @@ def make_hand(palm_x=0.5, pose="open"):
     """Mão sintética com pulso em (palm_x, 0.70), dedos apontando para cima.
 
     pose: 'open' (5 dedos estendidos), 'two' (indicador+médio),
+    'two_thumb' (indicador+médio com POLEGAR aberto — o V natural),
     'fist' (todos dobrados), 'three' (indicador+médio+anelar).
     """
     wrist = (palm_x, 0.70)
@@ -49,8 +50,8 @@ def make_hand(palm_x=0.5, pose="open"):
         lm[base_idx + 3] = tip
 
     ext = {
-        "index": pose in ("open", "two", "three"),
-        "middle": pose in ("open", "two", "three"),
+        "index": pose in ("open", "two", "three", "two_thumb"),
+        "middle": pose in ("open", "two", "three", "two_thumb"),
         "ring": pose in ("open", "three"),
         "pinky": pose == "open",
     }
@@ -60,7 +61,7 @@ def make_hand(palm_x=0.5, pose="open"):
     finger(17, FINGER_DIRECTIONS["pinky"], ext["pinky"])
 
     # polegar: estendido se afastando da palma; dobrado cruzando sobre ela
-    if pose == "open":
+    if pose in ("open", "two_thumb"):
         lm[1] = (wrist[0] - 0.05, wrist[1] - 0.04)
         lm[2] = (wrist[0] - 0.10, wrist[1] - 0.08)
         lm[3] = (wrist[0] - 0.15, wrist[1] - 0.11)
@@ -86,6 +87,7 @@ def run(detector, frames, t0=100.0):
 def test_poses_classificadas():
     assert classify_pose(make_hand(pose="open")) == POSE_OPEN_HAND
     assert classify_pose(make_hand(pose="two")) == POSE_TWO_FINGERS
+    assert classify_pose(make_hand(pose="two_thumb")) == POSE_TWO_FINGERS
     assert classify_pose(make_hand(pose="fist")) == POSE_NONE
     assert classify_pose(make_hand(pose="three")) == POSE_NONE
 
@@ -96,6 +98,41 @@ def test_swipe_direita_para_esquerda_troca_para_direita():
     det = GestureDetector()
     frames = [make_hand(palm_x=x, pose="two") for x in _ramp(0.70, 0.40, 12)]
     assert run(det, frames) == ["workspace_right"]
+
+
+def test_v_natural_com_polegar_aberto_dispara_swipe():
+    """Reproduz a calibração real: V com polegar semi-aberto deve funcionar."""
+    det = GestureDetector()
+    frames = [make_hand(palm_x=x, pose="two_thumb") for x in _ramp(0.70, 0.40, 12)]
+    assert run(det, frames) == ["workspace_right"]
+
+
+def test_oscilacao_de_pose_nao_quebra_o_swipe():
+    """Votação majoritária: frames de pose errada intercalados não resetam."""
+    det = GestureDetector()
+    frames = []
+    for i, x in enumerate(_ramp(0.70, 0.40, 12)):
+        pose = "fist" if i % 3 == 1 else "two"  # 1/3 dos frames oscila
+        frames.append(make_hand(palm_x=x, pose=pose))
+    assert run(det, frames) == ["workspace_right"]
+
+
+def test_gap_curto_de_mao_nao_quebra_o_swipe():
+    """Grace period: a mão sumindo 4 frames no meio do trajeto não reseta."""
+    det = GestureDetector()
+    frames = [
+        make_hand(palm_x=x, pose="two") if not (5 <= i < 9) else None
+        for i, x in enumerate(_ramp(0.70, 0.40, 12))
+    ]
+    assert run(det, frames) == ["workspace_right"]
+
+
+def test_gap_longo_zera_o_trajeto():
+    det = GestureDetector()
+    frames = [make_hand(palm_x=x, pose="two") for x in _ramp(0.70, 0.58, 12)]
+    frames += [None] * 12                      # 0.4s fora do frame
+    frames += [make_hand(palm_x=0.58, pose="two")] * 30  # reaparece parada
+    assert run(det, frames) == []
 
 
 def test_swipe_esquerda_para_direita_troca_para_esquerda():

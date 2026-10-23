@@ -59,3 +59,23 @@ código + docs.
 osascript é stdlib-adjacente (subprocess), sem dependência nova, e o erro de
 permissão (1002) é detectável para instruir o usuário. pynput/Quartz exigiria
 o mesmo grant de Acessibilidade com mais código.
+
+## 8. Emenda de calibração: polegar livre na pose de dois dedos + votação e grace (23/10/2026)
+
+Primeira sessão de calibração com a mão real: mão aberta disparou 2x, swipe
+0x. Causas encontradas e corrigidas:
+
+- **Polegar saiu da exigência da pose de dois dedos.** Em V natural o polegar
+  fica semi-aberto e a regra original ("polegar dobrado") rejeitava a pose —
+  ela nunca era reconhecida. A exclusão com a mão aberta (intenção da
+  decisão 3) continua garantida por anelar+mínimo dobrados.
+- **Votação majoritária da pose (3 frames).** Com landmarks reais a
+  classificação oscila frame a frame e cada frame de pose errada zerava o
+  trajeto do swipe — nunca acumulava 15% de deslocamento.
+- **Frames sem mão não zeram mais o trajeto diretamente.** Quem decide é o
+  grace de 0,18 s no próximo frame com mão (gap curto de blur/sombra não
+  mata o swipe; mão fora por mais que isso zera).
+- **Flag --debug** (telemetria de pose/trajeto/hold a cada 0,5 s) para
+  calibrar com dados, não com adivinhação.
+
+Blindagens da decisão 4 foram fortalecidas, não removidas.

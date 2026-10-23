@@ -5,8 +5,9 @@ Não usa OpenCV nem MediaPipe aqui: recebe landmarks já normalizados
 sequências sintéticas — ver tests/test_gestures.py.
 
 Gestos:
-- Swipe com DOIS DEDOS (indicador + médio estendidos; polegar, anelar e
-  mínimo dobrados): deslocamento horizontal rápido do centro da palma.
+- Swipe com DOIS DEDOS (indicador + médio estendidos; anelar e mínimo
+  dobrados; polegar livre): deslocamento horizontal rápido do centro da
+  palma.
     - mão vai da direita para a esquerda -> evento "workspace_right"
       (cmd+seta direita, conforme pedido)
     - mão vai da esquerda para a direita -> evento "workspace_left"
@@ -14,12 +15,20 @@ Gestos:
 - MÃO ABERTA (5 dedos estendidos) segurada por hold_seconds -> "open_app".
 
 Blindagens (lição de CV: ação não é detecção):
+- votação majoritária da pose nas últimas frames (classificação não oscila);
 - suavização EMA dos landmarks (tremido não vira swipe);
 - swipe precisa ser horizontal (|dx| domina |dy|) e rápido (dentro da janela);
 - salto grande do centro da palma entre frames = tracking quebrou
   (corte, troca de mão) -> zera o estado, nunca conta;
 - cooldowns: swipe não dispara em rajada; mão aberta dispara uma vez por
   episódio e só re-arma depois que a mão deixa de estar aberta.
+- o trajeto do swipe tolera uma pose perdida breve (blur, meio segundo de
+  sombra), mas só dispara com a pose confirmada no frame do disparo.
+
+Nota de calibração (23/10/2026): o polegar foi REMOVIDO da exigência da pose
+de dois dedos — em V natural ele fica semi-aberto e a pose nunca era
+reconhecida. A exclusividade com a mão aberta continua garantida por
+anelar+mínimo dobrados (mão aberta tem os dois estendidos).
 """
 
 from __future__ import annotations
@@ -66,7 +75,9 @@ def classify_pose(lm) -> str:
     )
     if index and middle and ring and pinky and thumb:
         return POSE_OPEN_HAND
-    if index and middle and not ring and not pinky and not thumb:
+    # dois dedos: polegar livre (em V natural ele fica semi-aberto);
+    # anelar + mínimo dobrados é o que separa da mão aberta
+    if index and middle and not ring and not pinky:
         return POSE_TWO_FINGERS
     return POSE_NONE
 
@@ -77,14 +88,17 @@ class GestureDetector:
     swipe_min_travel: float = 0.15   # deslocamento mínimo (fração da largura)
     swipe_window: float = 0.35       # o trajeto precisa caber nesta janela (s)
     swipe_cooldown: float = 1.2      # intervalo mínimo entre swipes (s)
+    swipe_grace: float = 0.18        # tolerância de pose perdida no trajeto (s)
     open_cooldown: float = 4.0       # intervalo mínimo entre "abrir app" (s)
     jump_reset: float = 0.35         # salto da palma que zera o estado
     ema_alpha: float = 0.6           # peso do frame novo na suavização
+    pose_vote_frames: int = 3        # votação majoritária da pose
 
     # estado (populados por update())
     pose: str = POSE_NONE
     smoothed: list | None = None
     hold_progress: float = 0.0
+    _pose_votes: list = field(default_factory=list)
     _trail: list = field(default_factory=list)   # [(t, cx, cy)] com dois dedos
     _swipe_ok_at: float = 0.0
     _hold_start: float | None = None
@@ -99,13 +113,18 @@ class GestureDetector:
         'open_app'.
         """
         if landmarks is None:
-            self.pose = POSE_NONE
+            # mão saiu do frame: hold para; o trajeto do swipe NÃO é zerado
+            # aqui — o grace (swipe_grace) decide no próximo frame com mão
+            self._push_vote(POSE_NONE)
+            self.pose = self._voted_pose()
             self.hold_progress = 0.0
-            self._reset_motion()
+            self._hold_start = None
+            self._hold_fired = False
             return []
 
         sm = self._smooth(landmarks)
-        self.pose = classify_pose(sm)
+        self._push_vote(classify_pose(sm))
+        self.pose = self._voted_pose()
         palm = self._palm_centroid(sm)
 
         # salto grande = tracking quebrou (corte, outra mão): zera e ignora
@@ -119,12 +138,26 @@ class GestureDetector:
         events += self._update_hold(now)
         return events
 
+    def debug_state(self) -> dict:
+        """Telemetria para calibração (flag --debug do main.py)."""
+        state = {
+            "pose": self.pose or "-",
+            "hold": round(self.hold_progress, 2),
+            "trail": len(self._trail),
+        }
+        if self._trail:
+            state["dx"] = round(self._trail[-1][0] - self._trail[0][0], 3)
+        return state
+
     # -- swipe ------------------------------------------------------------
     def _update_swipe(self, palm: tuple, now: float) -> list[str]:
+        if self.pose == POSE_TWO_FINGERS:
+            self._trail.append((now, palm[0], palm[1]))
+        # pose perdida além da tolerância encerra o trajeto
+        if self._trail and now - self._trail[-1][0] > self.swipe_grace:
+            self._trail.clear()
         if self.pose != POSE_TWO_FINGERS:
-            self._trail.clear()  # o trajeto só vale com a pose mantida
-            return []
-        self._trail.append((now, palm[0], palm[1]))
+            return []  # dispara só com a pose confirmada
         while self._trail and now - self._trail[0][0] > self.swipe_window:
             self._trail.pop(0)
         if len(self._trail) < 2 or now < self._swipe_ok_at:
@@ -160,6 +193,22 @@ class GestureDetector:
         return []
 
     # -- auxiliares --------------------------------------------------------
+    def _push_vote(self, raw: str) -> None:
+        self._pose_votes.append(raw)
+        if len(self._pose_votes) > self.pose_vote_frames:
+            self._pose_votes.pop(0)
+
+    def _voted_pose(self) -> str:
+        """Maioria das últimas poses; em empate mantém a anterior."""
+        counts: dict[str, int] = {}
+        for v in self._pose_votes:
+            counts[v] = counts.get(v, 0) + 1
+        best_n = max(counts.values())
+        winners = [v for v, n in counts.items() if n == best_n]
+        if len(winners) == 1:
+            return winners[0]
+        return self.pose
+
     def _smooth(self, lm) -> list:
         if self.smoothed is None or len(self.smoothed) != len(lm):
             self.smoothed = [tuple(p) for p in lm]
