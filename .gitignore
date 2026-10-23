@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Modelo baixado por scripts/setup.sh (não versionar artefato pesado)
+models/
+
+# Dados e saídas
+outputs/
+
+# SO / editor
+.DS_Store
+.idea/
+.vscode/
