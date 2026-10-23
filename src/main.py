@@ -37,6 +37,10 @@ CAMERA_HINT = (
     " > Privacidade e Segurança > Câmera > ative o Terminal (ou o app de onde"
     " rodou o projeto) e rode de novo."
 )
+CAMERA_LOST_HINT = (
+    "[erro] A câmera parou de responder e não voltou após as reconexões."
+    " Feche outros apps que estejam usando a câmera e rode de novo."
+)
 MODEL_HINT = (
     "[erro] Modelo não encontrado em {path}.\n"
     "       Rode scripts/setup.sh (baixa o hand_landmarker.task oficial do"
@@ -134,8 +138,23 @@ def main(argv=None) -> int:
                 if from_file:
                     break  # fim do vídeo de teste
                 read_fails += 1
-                if read_fails > 30:
-                    print(CAMERA_HINT.format(index=args.camera))
+                if read_fails > 10:
+                    # stream caiu no meio do uso: reabrir em vez de morrer
+                    print("[aviso] Câmera parou de responder; reabrindo...",
+                          flush=True)
+                    cap.release()
+                    reopened = False
+                    for _ in range(5):
+                        time.sleep(0.6)
+                        cap = cv2.VideoCapture(source)
+                        if cap.isOpened() and cap.read()[0]:
+                            reopened = True
+                            break
+                    if reopened:
+                        print("[ok] Câmera reaberta.", flush=True)
+                        read_fails = 0
+                        continue
+                    print(CAMERA_LOST_HINT, flush=True)
                     return 1
                 continue
             read_fails = 0
