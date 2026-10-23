@@ -79,3 +79,9 @@ Primeira sessão de calibração com a mão real: mão aberta disparou 2x, swipe
   calibrar com dados, não com adivinhação.
 
 Blindagens da decisão 4 foram fortalecidas, não removidas.
+
+## 9. Modificador do swipe: ctrl, não cmd (23/10/2026, correção do Daniel)
+
+Eu havia entendido cmd+seta; o correto para trocar de Space é **ctrl+seta**
+(`key code N using control down` no osascript). Mudado em src/actions.py e em
+toda a documentação. O mapeamento direção->seta (decisão 4) não mudou.

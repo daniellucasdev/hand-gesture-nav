@@ -8,8 +8,8 @@ Uso:
     python src/main.py --no-window         # sem janela (roda em background)
 
 Gestos:
-    swipe (indicador+médio) da direita p/ esquerda -> cmd+→ (Space direita)
-    swipe (indicador+médio) da esquerda p/ direita -> cmd+← (Space esquerda)
+    swipe (indicador+médio) da direita p/ esquerda -> ctrl+→ (Space direita)
+    swipe (indicador+médio) da esquerda p/ direita -> ctrl+← (Space esquerda)
     mão aberta por 2 segundos                      -> abre o Claude Desktop
 """
 

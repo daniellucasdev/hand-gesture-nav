@@ -5,8 +5,8 @@ local, sem nuvem, sem dados saindo da máquina.
 
 | Gesto | Ação |
 |---|---|
-| Swipe com **dois dedos** (indicador + médio) da **direita para a esquerda** | Space para a **direita** (cmd+→) |
-| Swipe com **dois dedos** da **esquerda para a direita** | Space para a **esquerda** (cmd+←) |
+| Swipe com **dois dedos** (indicador + médio) da **direita para a esquerda** | Space para a **direita** (ctrl+→) |
+| Swipe com **dois dedos** da **esquerda para a direita** | Space para a **esquerda** (ctrl+←) |
 | **Mão aberta** por **2 segundos** | Abre o **Claude Desktop** |
 
 ```
@@ -28,7 +28,7 @@ Ponderação que fechou a arquitetura (detalhes em docs/decisoes.md):
    vídeo (`requestAnimationFrame` throttling) quando a aba não está visível —
    e "não está visível" é EXATAMENTE o estado ao trocar de Space. O gesto
    falharia no único momento em que você o usa.
-2. **Injeção de teclas direta.** O processo Python envia cmd+seta via
+2. **Injeção de teclas direta.** O processo Python envia ctrl+seta via
    osascript e abre apps via `open -a`, sem um servidor HTTP no meio.
 3. **Mesmo padrão de projetos anteriores** (venv + launcher .command de duplo
    clique), zero navegador para manter.
@@ -52,7 +52,7 @@ cd ~/Desktop/hand-gesture-nav
 | Permissão | Onde liberar | Para quê |
 |---|---|---|
 | **Câmera** | Ajustes > Privacidade e Segurança > **Câmera** > ative **Terminal** | capturar a webcam |
-| **Acessibilidade** | Ajustes > Privacidade e Segurança > **Acessibilidade** > ative **Terminal** | enviar cmd+seta ao sistema |
+| **Acessibilidade** | Ajustes > Privacidade e Segurança > **Acessibilidade** > ative **Terminal** | enviar ctrl+seta ao sistema |
 
 O app detecta as duas ausências e imprime estas instruções na hora, em vez de
 quebrar.
@@ -69,7 +69,7 @@ python src/main.py
 - Aperte **Q** na janela da câmera (ou Ctrl+C no terminal) para sair.
 - **Primeira vez, rode com `--dry-run`**: os gestos aparecem no terminal sem
   executar nada — bom para calibrar distância/velocidade.
-- O cmd+seta vai para o **app em foco**; para só trocar de Space, deixe o
+- O ctrl+seta vai para o **app em foco**; para só trocar de Space, deixe o
   Finder/desktop em foco (clique no papel de parede antes de gesticular).
 
 Flags úteis:
@@ -96,7 +96,7 @@ source .venv/bin/activate && python -m pytest tests/ -q
 ## Estrutura
 
 ```
-src/actions.py    ações: cmd+seta (Spaces) e abrir app (osascript / open -a)
+src/actions.py    ações: ctrl+seta (Spaces) e abrir app (osascript / open -a)
 src/gestures.py   máquina de estados: poses, swipe e hold (sem OpenCV — testável isolado)
 src/overlay.py    desenho dos landmarks + HUD
 src/main.py       loop da câmera, MediaPipe, dispatch das ações
@@ -127,7 +127,7 @@ nada dispara sem passar pelas blindagens.
 - Punho fechado às vezes não é detectado pelo MediaPipe (detector de palma) —
   irrelevante para os gestos.
 - Deixe o rosto/luz decente: contra-luz forte derruba a detecção.
-- O app troca de Space do app em foco; editores/IDEs podem capturar cmd+seta
+- O app troca de Space do app em foco; editores/IDEs podem capturar ctrl+seta
   (neles, o atalho do Space não dispara).
 
 ## Créditos

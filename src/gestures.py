@@ -9,9 +9,9 @@ Gestos:
   dobrados; polegar livre): deslocamento horizontal rápido do centro da
   palma.
     - mão vai da direita para a esquerda -> evento "workspace_right"
-      (cmd+seta direita, conforme pedido)
+      (ctrl+seta direita)
     - mão vai da esquerda para a direita -> evento "workspace_left"
-      (cmd+seta esquerda)
+      (ctrl+seta esquerda)
 - MÃO ABERTA (5 dedos estendidos) segurada por hold_seconds -> "open_app".
 
 Blindagens (lição de CV: ação não é detecção):

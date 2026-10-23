@@ -20,16 +20,16 @@ ACCESSIBILITY_HINT = (
 
 
 def switch_space(direction: str, dry_run: bool = False) -> bool:
-    """Troca o Space ativo com cmd + seta. direction: 'left' | 'right'."""
+    """Troca o Space ativo com ctrl + seta. direction: 'left' | 'right'."""
     if direction not in ARROW_KEYCODES:
         raise ValueError(f"direção inválida: {direction!r} (use 'left' ou 'right')")
     keycode = ARROW_KEYCODES[direction]
     script = (
         'tell application "System Events" to key code '
-        f"{keycode} using command down"
+        f"{keycode} using control down"
     )
     label = (
-        f"Space para a {'esquerda (cmd+←)' if direction == 'left' else 'direita (cmd+→)'}"
+        f"Space para a {'esquerda (ctrl+←)' if direction == 'left' else 'direita (ctrl+→)'}"
     )
     return _run(["osascript", "-e", script], label, dry_run)
 

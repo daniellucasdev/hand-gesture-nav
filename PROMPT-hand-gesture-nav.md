@@ -6,10 +6,13 @@ Continuar o desenvolvimento do projeto hand-gesture-nav, que já existe e está
 neste repositório. O app abre a webcam, lê gestos da minha mão e executa:
 
 1. Swipe com DOIS dedos (indicador+médio) da direita para a esquerda > troca o
-   Space do macOS para a DIREITA (cmd + seta direita).
+   Space do macOS para a DIREITA (ctrl + seta direita).
 2. Swipe com dois dedos da esquerda para a direita > troca o Space para a
-   ESQUERDA (cmd + seta esquerda).
+   ESQUERDA (ctrl + seta esquerda).
 3. Mão aberta por 2 segundos > abre o Claude Desktop.
+
+(ATENÇÃO: modificador é CTRL, não cmd — corrigido por mim em 23/10/2026 após
+a primeira calibração; não voltar para cmd.)
 
 Roda APENAS local no meu Mac. Este prompt é o contrato: nada de recriar o
 projeto de outro jeito ou reabrir decisões já fechadas.
