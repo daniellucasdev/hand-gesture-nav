@@ -25,11 +25,16 @@ projeto de outro jeito ou reabrir decisões já fechadas.
 - Pipeline provado com foto e vídeo real de mão: pose "mão aberta"
   classificada com 0.96 de confiança; app de ponta a ponta com vídeo dispara
   "abrir app" exatamente uma vez (com --dry-run).
+- VALIDADO COM A MINHA MÃO REAL (23/10, sessão de calibração em --dry-run
+  --debug): 18 gestos dispararam — 9 swipes p/ esquerda, 6 p/ direita, 3x
+  mão aberta — sem falsos positivos entre gestos (trajetos dx~0.30 vs
+  mínimo 0.15). As ações reais (osascript e open -a) também já foram
+  provadas fora do dry-run; permissões de Câmera e Acessibilidade do
+  Terminal concedidas. Falta só o uso corriqueiro sem --dry-run.
 - open -a Claude funciona (Claude Desktop instalado em /Applications/Claude.app).
-- NÃO verificado ainda: os 3 gestos com a MINHA mão na webcam e a troca real
-  de Space — dependem de 2 permissões do macOS que só eu concedo:
-  Câmera > Terminal e Acessibilidade > Terminal (Ajustes > Privacidade e
-  Segurança). O app detecta a falta das duas e imprime instruções.
+- O que o dry-run não cobre: a troca REAL de Space e a abertura real do
+  Claude durante o uso — as ações já foram provadas isoladamente, falta
+  apenas o uso corriqueiro sem --dry-run.
 
 ## Contexto do repo (verifique antes de usar — referências podem ter mudado)
 
