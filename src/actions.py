@@ -103,6 +103,9 @@ def send_keys(spec: str, dry_run: bool = False) -> bool:
     )
 
 
+_voice_warned = False  # o aviso de atalho ausente aparece só na 1ª vez
+
+
 def toggle_recording(
     app_name: str, start: bool, key_spec: str, dry_run: bool = False
 ) -> bool:
@@ -112,12 +115,14 @@ def toggle_recording(
     o estado é mantido por quem chama. Sem key_spec, o gesto apenas traz o
     app para frente e avisa como configurar o atalho.
     """
+    global _voice_warned
     verbo = "iniciar" if start else "encerrar"
     ok = _run(["open", "-a", app_name], f"{verbo} gravação: ativar {app_name}", dry_run)
     if key_spec:
         time.sleep(0.4)  # dar foco ao app antes do atalho
         ok = send_keys(key_spec, dry_run) and ok
-    elif not dry_run:
+    elif not dry_run and not _voice_warned:
+        _voice_warned = True
         print(
             "[aviso] Sem atalho de gravação configurado: use --voice-keys com o"
             f" atalho de voz/ditado do seu {app_name} (ex.: --voice-keys f5).",
